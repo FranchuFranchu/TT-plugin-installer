@@ -18,6 +18,7 @@ from urllib.request import urlopen
 from html.parser import HTMLParser
 from random import random
 from os import remove
+import time
 import re
 def get(ls,i):
     try:
@@ -345,7 +346,10 @@ if __name__ == '__main__':
             if count > 2:
                 what+=(i+' ')
     except IndexError:
-        searchDownload(input('What do yow want to search?> '))
+        print("""You have to run this from the command line, like this:
+path/to/this/script>theotown search designate road""")
+        time.sleep(5)
+        sys.exit(3)
     if action in ['s','search']:
         what = what.replace(' ','%20')
         json_search(what)
