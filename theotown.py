@@ -345,13 +345,14 @@ if __name__ == '__main__':
             if count > 2:
                 what+=(i+' ')
     except IndexError:
-        print("Usage: theotown search pack")
-        sys.exit(3)
+        searchDownload(input('What do yow want to search?> '))
     if action in ['s','search']:
         what = what.replace(' ','%20')
         json_search(what)
     elif action in ['d','download']:
         download(what)
+    elif action in ['i','interactive']:
+        searchDownload(what)
     else:
         print('Invalid action. Options: search|download')
         sys.exit(4)
