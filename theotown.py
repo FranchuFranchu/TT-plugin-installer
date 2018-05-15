@@ -25,7 +25,7 @@ def get(ls,i):
     except:
         return None
 class selecter(HTMLParser):
-    #selects the post from all the aviable onews
+    #selects the post from all the aviable ones
     def handle_starttag(self,tag,attrs):
         try:
             self.openedLevel
@@ -83,15 +83,15 @@ class selecter(HTMLParser):
             self.end = self.getpos()[1]
             self.openedLevel = -1
 """
-    ######################
-    ###
-    ###
-    ###
-    ###
-    ###
-    ###
-    ###
-    ##########
+    ######################  
+    ###                     
+    ###                     
+    ###                 
+    ###                 
+    ###                 
+    ###                     
+    ###                     
+    ##########                  
     ###                                            
     ###                                            
     ###                                            
@@ -107,6 +107,7 @@ class selecter(HTMLParser):
 
 """
 class reader(HTMLParser):
+    #downloads from the attachbox and inline!
     def handle_starttag(self,tag,attrs):
         try:
             self.openedLevel
@@ -120,18 +121,20 @@ class reader(HTMLParser):
             self.hiter = 1
         if self.openedLevel == 10:
             if get(attrs,0) == ('class','attachbox'):
-                self.openedLevel+=2
+                self.openedLevel+=1
                 self.inline = False
-            elif get(attrs,0) == ('class','inline-attachment'):
-                
-                self.openedlevel = 12
+            if get(attrs,0) == ('class','inline-attachment'):
+                self.openedLevel+=2
                 self.inline = True
         elif self.openedLevel == 11:
 
             if tag == 'dd':
                 self.openedLevel += 1
         elif self.openedLevel == 12:
-            if tag == 'dl':
+            if self.inline:
+                if tag == 'dl' and get(attrs,0) == ('class','file'):
+                    self.openedLevel += 1
+            elif tag == 'dl':
                 self.openedLevel += 1
         elif self.openedLevel == 13:
             if tag == 'dt':
@@ -171,6 +174,79 @@ class reader(HTMLParser):
         elif self.aopened and tag == 'a':
             file = open('plugins/.temp','rb')
             
+            #self.saveAs = re.sub(r'[^\x00-\x7F]+','', self.saveAs)
+            new = open('plugins/'+self.saveAs.replace('\\n','').replace('\\t',''),'wb')
+            new.write(file.read())
+            file.close()
+            remove('plugins/.temp')
+            print({'fileName':self.saveAs})
+            self.dFile = True
+            self.openedLevel = 10
+            self.lock = False
+            self.hiter = 1
+            self.hiter +=11
+            self.aopened = False
+
+
+class inline(HTMLParser):
+    #downloads from inline
+    #deprecated
+    def handle_starttag(self,tag,attrs):
+        print(tag)
+        try:
+            self.openedLevel
+        except:
+            self.oopened = False
+            self.openedLevel = 10
+            self.dFile = False
+            self.saveAs = ''
+            self.aopened = False
+            self.lock = False
+            self.hiter = 1
+        if self.openedLevel == 10:
+            if get(attrs,0) == ('class','inline-attachment'):
+                self.openedLevel+=2
+                print('good')
+        elif self.openedLevel == 12:
+            if tag == 'dl' and get(attrs,0) == ('class','file'):
+                self.openedLevel += 1
+        elif self.openedLevel == 13:
+            if tag == 'dt':
+                self.openedLevel += 1
+        elif self.openedLevel == 14:
+            if tag == 'a':
+                
+                if attrs[1][1] in ['top','avatar']:
+                    self.openedLevel = 10
+                else:
+                    file =open('plugins/.temp','wb')
+                    print('Saving...')
+                    url = 'http://www.theotown.com/forum'+attrs[1][1][1:]
+                    print(url)
+                    bytes = urlopen(url).read()
+                    self.lock = False
+                    file.write(bytes)
+                    file.close()
+                    self.aopened = True
+                    
+        else:
+            raise SyntaxError
+        #if vap < self.openedLevel:
+        #    print('good')
+        #    print(vap)
+    def handle_data(self,data):
+        if self.openedLevel == 14:
+            if self.aopened:
+                self.saveAs+=data
+
+    def handle_endtag(self,tag):
+        if not(self.dFile) and tag == 'html' :
+            print('Seems the creator of this plugin published this in a way we could not understand')
+            sys.exit(2)
+        elif tag=='html':
+            print('}')
+        elif self.aopened and tag == 'a':
+            file = open('plugins/.temp','rb')
             #self.saveAs = re.sub(r'[^\x00-\x7F]+','', self.saveAs)
             new = open('plugins/'+self.saveAs.replace('\\n','').replace('\\t',''),'wb')
             new.write(file.read())
@@ -246,7 +322,7 @@ def searchDownload(what):
     lnk = str(urlopen(se.links[int(input())-1]).read())
     p =selecter()
     p.feed(lnk)
-    a = reader()
+    a = inline()
     a.feed(lnk[p.start:])
 def json_search(what):
     se = search(what)
@@ -256,7 +332,6 @@ def download(link):
     lnk = str(urlopen(link).read())
     p = selecter()
     p.feed(lnk)
-    print('worked fine')
     a = reader()
     a.feed(lnk[p.start:])
 import sys
