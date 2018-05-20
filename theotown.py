@@ -18,6 +18,7 @@ from urllib.request import urlopen
 from html.parser import HTMLParser
 from random import random
 from os import remove
+from kivy.utils import platform
 import time
 import re
 def get(ls,i):
@@ -25,6 +26,16 @@ def get(ls,i):
         return ls[i]
     except:
         return None
+"""
+ _______  _______  _        _______  _______ _________ _______  _______ 
+(  ____ \(  ____ \( \      (  ____ \(  ____ \\__   __/(  ____ \(  ____ )
+| (    \/| (    \/| (      | (    \/| (    \/   ) (   | (    \/| (    )|
+| (_____ | (__    | |      | (__    | |         | |   | (__    | (____)|
+(_____  )|  __)   | |      |  __)   | |         | |   |  __)   |     __)
+      ) || (      | |      | (      | |         | |   | (      | (\ (   
+/\____) || (____/\| (____/\| (____/\| (____/\   | |   | (____/\| ) \ \__
+\_______)(_______/(_______/(_______/(_______/   )_(   (_______/|/   \__/
+"""
 class selecter(HTMLParser):
     #selects the post from all the aviable ones
     def handle_starttag(self,tag,attrs):
@@ -84,28 +95,38 @@ class selecter(HTMLParser):
             self.end = self.getpos()[1]
             self.openedLevel = -1
 """
-    ######################  
-    ###                     
-    ###                     
-    ###                 
-    ###                 
-    ###                 
-    ###                     
-    ###                     
-    ##########                  
-    ###                                            
-    ###                                            
-    ###                                            
-    ###                                            
-    ###                                            
-    ###                                            
-    ###                                            
-    ###                                            
-    ###                                             
-    ###                     i'm not good at ascii art
-    ###
-    ###             
+ ______   _______ _________          _______ 
+(  __  \ (  ____ )\__   __/|\     /|(  ____ \
+| (  \  )| (    )|   ) (   | )   ( || (    \/
+| |   ) || (____)|   | |   | |   | || (__    
+| |   | ||     __)   | |   ( (   ) )|  __)   
+| |   ) || (\ (      | |    \ \_/ / | (      
+| (__/  )| ) \ \_____) (___  \   /  | (____/\
+(______/ |/   \__/\_______/   \_/   (_______/
+"""
+class drive(HTMLParser):
+    def handle_starttag(self,tag,attrs):
+        if tag == 'meta':
+            if attrs[0][1] == 'og:title':
+                sys.exit()
+                self.saveAs = attrs[1][1]
+            if attrs[0][1] == 'og:url':
+                #self.saveAs = re.sub(r'[^\x00-\x7F]+','', self.saveAs)
+                new = open('plugins/'+self.saveAs.replace('\\n','').replace('\\t',''),'wb')
+                new.write(urlopen(attrs[1][1]).read())
+                print({'fileName':self.saveAs})
+                sys.exit()
 
+
+"""
+ _______  _______  _______  ______   _______  _______ 
+(  ____ )(  ____ \(  ___  )(  __  \ (  ____ \(  ____ )
+| (    )|| (    \/| (   ) || (  \  )| (    \/| (    )|
+| (____)|| (__    | (___) || |   ) || (__    | (____)|
+|     __)|  __)   |  ___  || |   | ||  __)   |     __)
+| (\ (   | (      | (   ) || |   ) || (      | (\ (   
+| ) \ \__| (____/\| )   ( || (__/  )| (____/\| ) \ \__
+|/   \__/(_______/|/     \|(______/ (_______/|/   \__/
 """
 class reader(HTMLParser):
     #downloads from the attachbox and inline!
@@ -121,6 +142,11 @@ class reader(HTMLParser):
             self.lock = False
             self.hiter = 1
         if self.openedLevel == 10:
+            if tag == 'a' and 'https://drive.google.com/file/d/' in get(attrs,0)[1]:
+                f = drive()
+                print(attrs[0][1])
+                sys.exit()
+                f.feed(str(urlopen(attrs[0][1]).read()))
             if get(attrs,0) == ('class','attachbox'):
                 self.openedLevel+=1
                 self.inline = False
@@ -143,10 +169,18 @@ class reader(HTMLParser):
         elif self.openedLevel == 14:
             if tag == 'a':
                 
-                if attrs[1][1] in ['top','avatar']:
+                if get(get(attrs,1),1) in ['top','avatar']:
                     self.openedLevel = 10
+                elif 'drive.google.com/file/d' in get(get(attrs,0),1):
+                    f = drive()
+                    print(attrs[0][1])
+                    sys.exit()
+                    f.feed(str(urlopen(attrs[0][1]).read()))
                 else:
-                    file =open('plugins/.temp','wb')
+                    if platform == 'android':
+                        file =open('/sdcard/TheoTown/plugins/.temp','wb')
+                    else:
+                        file =open('plugins/.temp','wb')
                     print('Saving...')
                     url = 'http://www.theotown.com/forum'+attrs[1][1][1:]
                     print(url)
@@ -169,17 +203,26 @@ class reader(HTMLParser):
     def handle_endtag(self,tag):
         if not(self.dFile) and tag == 'html' :
             print('Seems the creator of this plugin published this in a way we could not understand')
-            sys.exit(2)
+            raise SystemExit
         elif tag=='html':
             print('}')
         elif self.aopened and tag == 'a':
-            file = open('plugins/.temp','rb')
-            
+            if platform == 'android':
+                file =open('/sdcard/TheoTown/plugins/.temp','rb')
+            else:
+                file = open('plugins/.temp','rb')
+            print(self.saveAs)
             #self.saveAs = re.sub(r'[^\x00-\x7F]+','', self.saveAs)
-            new = open('plugins/'+self.saveAs.replace('\\n','').replace('\\t',''),'wb')
+            if platform == 'android':
+                new =open('/sdcard/TheoTown/plugins/'+self.saveAs.replace('\\n','').replace('\\t',''),'wb')
+            else:  
+                new = open('plugins/'+self.saveAs.replace('\\n','').replace('\\t',''),'wb')
             new.write(file.read())
             file.close()
-            remove('plugins/.temp')
+            if platform == 'android':
+                remove('/sdcard/TheoTown/plugins/.temp')
+            else:
+                remove('plugins/.temp')
             print({'fileName':self.saveAs})
             self.dFile = True
             self.openedLevel = 10
@@ -189,77 +232,20 @@ class reader(HTMLParser):
             self.aopened = False
 
 
-class inline(HTMLParser):
-    #downloads from inline
-    #deprecated
-    def handle_starttag(self,tag,attrs):
-        print(tag)
-        try:
-            self.openedLevel
-        except:
-            self.oopened = False
-            self.openedLevel = 10
-            self.dFile = False
-            self.saveAs = ''
-            self.aopened = False
-            self.lock = False
-            self.hiter = 1
-        if self.openedLevel == 10:
-            if get(attrs,0) == ('class','inline-attachment'):
-                self.openedLevel+=2
-                print('good')
-        elif self.openedLevel == 12:
-            if tag == 'dl' and get(attrs,0) == ('class','file'):
-                self.openedLevel += 1
-        elif self.openedLevel == 13:
-            if tag == 'dt':
-                self.openedLevel += 1
-        elif self.openedLevel == 14:
-            if tag == 'a':
-                
-                if attrs[1][1] in ['top','avatar']:
-                    self.openedLevel = 10
-                else:
-                    file =open('plugins/.temp','wb')
-                    print('Saving...')
-                    url = 'http://www.theotown.com/forum'+attrs[1][1][1:]
-                    print(url)
-                    bytes = urlopen(url).read()
-                    self.lock = False
-                    file.write(bytes)
-                    file.close()
-                    self.aopened = True
-                    
-        else:
-            raise SyntaxError
-        #if vap < self.openedLevel:
-        #    print('good')
-        #    print(vap)
-    def handle_data(self,data):
-        if self.openedLevel == 14:
-            if self.aopened:
-                self.saveAs+=data
 
-    def handle_endtag(self,tag):
-        if not(self.dFile) and tag == 'html' :
-            print('Seems the creator of this plugin published this in a way we could not understand')
-            sys.exit(2)
-        elif tag=='html':
-            print('}')
-        elif self.aopened and tag == 'a':
-            file = open('plugins/.temp','rb')
-            #self.saveAs = re.sub(r'[^\x00-\x7F]+','', self.saveAs)
-            new = open('plugins/'+self.saveAs.replace('\\n','').replace('\\t',''),'wb')
-            new.write(file.read())
-            file.close()
-            remove('plugins/.temp')
-            print({'fileName':self.saveAs})
-            self.dFile = True
-            self.openedLevel = 10
-            self.lock = False
-            self.hiter = 1
-            self.hiter +=11
-            self.aopened = False
+"""
+
+ _______  _______  _______  _______  _______           _______  _______ 
+(  ____ \(  ____ \(  ___  )(  ____ )(  ____ \|\     /|(  ____ \(  ____ )
+| (    \/| (    \/| (   ) || (    )|| (    \/| )   ( || (    \/| (    )|
+| (_____ | (__    | (___) || (____)|| |      | (___) || (__    | (____)|
+(_____  )|  __)   |  ___  ||     __)| |      |  ___  ||  __)   |     __)
+      ) || (      | (   ) || (\ (   | |      | (   ) || (      | (\ (   
+/\____) || (____/\| )   ( || ) \ \__| (____/\| )   ( || (____/\| ) \ \__
+\_______)(_______/|/     \||/   \__/(_______/|/     \|(_______/|/   \__/
+                                                                        
+
+"""
 class searcher(HTMLParser):
     def handle_starttag(self,tag,attrs):
         #print(attrs)
@@ -278,6 +264,14 @@ class searcher(HTMLParser):
             if get(attrs,0) == ('id','page-body'):
                 self.openedLevel += 1
         elif self.openedLevel == 4:
+            if tag == 'li':
+                if get(attrs,0) == ('class','arrow next'):
+                    self.waitForA = True
+            if self.waitForA and attrs[0] == ('class',"button button-icon-only"):
+                new = self.__class__()
+                new.feed(str((urlopen('http://www.theotown.com/forum'+attrs[1][1][1:]).read())))
+                self.ls.extend(new.ls)
+                self.waitForA = False
             if get(attrs,0) == ('class','search post bg2') or get(attrs,0) == ('class','search post bg1'):
                 self.openedLevel += 1
         elif self.openedLevel == 5:
@@ -303,28 +297,43 @@ class searcher(HTMLParser):
             self.data = ''
             self.links = []
             self.ls = []
+            self.pData = ''
+            self.waitForA = False
         if self.openedLevel == 7:
-            self.data+=(data)
+            self.data+=(data) 
     def handle_endtag(self,tag):
         if tag == 'a' and self.openedLevel == 7:
             self.ls.append({'name':self.data,'link':self.currLink})
             self.openedLevel = 4
             self.data = ''
+        if tag == 'html':
+            for i in range(len(self.ls)):
+                j = self.ls[i]
+                self.pData+=(str(i+1)+': '+j["name"]+'\n')
+"""
+
+ ______  _______ _________ _       
+(       )(  ___  )\__   __/( (    /|
+| () () || (   ) |   ) (   |  \  ( |
+| || || || (___) |   | |   |   \ | |
+| |(_)| ||  ___  |   | |   | (\ \) |
+| |   | || (   ) |   | |   | | \   |
+| )   ( || )   ( |___) (___| )  \  |
+|/     \||/     \|\_______/|/    )_)
+                                    
+
+"""
 def search(what):
     res = 'http://www.theotown.com/forum/search.php?keywords='+what.replace(' ','+')+'&terms=all&author=&fid%5B%5D=43&sc=1&sf=titleonly&sr=posts&sk=t&sd=d&st=0&ch=300&t=0&submit=Search'
     cont = urlopen(res)
     se = searcher()
     se.feed(str(cont.read()))
     return se
-def searchDownload(what):
-    se = search(what)
-    print(se.data)
-    print('Select a number')
-    lnk = str(urlopen(se.links[int(input())-1]).read())
-    p =selecter()
-    p.feed(lnk)
-    a = inline()
-    a.feed(lnk[p.start:])
+def interactive():
+    se = search(input('Search for: '))
+    print(se.pData)
+    print('Select a number: ')
+    download(se.ls[int(input())-1]['link'])
 def json_search(what):
     se = search(what)
     print(str(se.ls).replace("'",'"'))
@@ -346,17 +355,18 @@ if __name__ == '__main__':
             if count > 2:
                 what+=(i+' ')
     except IndexError:
-        print("""You have to run this from the command line, like this:
-path/to/this/script>theotown search designate road""")
-        time.sleep(5)
-        sys.exit(3)
+        action =  'i'
+        #print("""You have to run this from the command line, like this:
+#path/to/this/script>theotown search designate road""")
+        #time.sleep(5)
+        #sys.exit(3)
     if action in ['s','search']:
         what = what.replace(' ','%20')
         json_search(what)
     elif action in ['d','download']:
         download(what)
     elif action in ['i','interactive']:
-        searchDownload(what)
+        interactive()
     else:
         print('Invalid action. Options: search|download')
         sys.exit(4)
